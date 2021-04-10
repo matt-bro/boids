@@ -12,7 +12,11 @@ function animationLoop() {
     ctx.clearRect(0, 0, width, height);
     for (let boid of boids) {
         flyTowardsCenter(boid);
+        avoidOthers(boid);
+        matchVelocity(boid);
+        limitVelocity(boid);
         keepWithinBounds(boid);
+
         boid.x += boid.dx;
         boid.y += boid.dy;
         //boid.history.push([boid.x, boid.y])
@@ -92,7 +96,7 @@ function flyTowardsCenter(boid) {
 }
 
 function keepWithinBounds(boid) {
-    const margin = 100;
+    const margin = 300;
     const turnFactor = 1;
 
     if (boid.x < margin) {
@@ -101,20 +105,67 @@ function keepWithinBounds(boid) {
     if (boid.y < margin) {
         boid.dy += turnFactor;
     }
-    if (boid.x > width-margin) {
+    if (boid.x > width - margin) {
         boid.dx -= turnFactor;
     }
-    if (boid.y > height-margin) {
-        boid.dy -= turnFactor; 
+    if (boid.y > height - margin) {
+        boid.dy -= turnFactor;
     }
 }
 
 function limitVelocity(boid) {
-
+    const velocityLimit = 15;
+    const velocity = Math.sqrt(boid.dx * boid.dx + boid.dy * boid.dy);
+    if (velocity > velocityLimit) {
+        boid.dx = (boid.dx / velocity) * velocityLimit;
+        boid.dy = (boid.dy / velocity) * velocityLimit;
+    }
 }
 
-function matchVelocity(boid) { }
-function avoidOthers(boid) { }
+function matchVelocity(boid) {
+    const matchingFactor = 0.05;
+
+    let avgDx = 0;
+    let avgDy = 0;
+    let numberOfBoidsInRange = 0;
+
+    for (let otherBoid of boids) {
+        if (distance(boid, otherBoid) < visualRange) {
+            avgDx += otherBoid.dx;
+            avgDy += otherBoid.dy;
+            numberOfBoidsInRange += 1;
+        }
+    }
+
+    if (numberOfBoidsInRange) {
+        avgDx = avgDx / numberOfBoidsInRange;
+        avgDy = avgDy / numberOfBoidsInRange;
+
+        boid.dx += (avgDx - boid.dx) * matchingFactor;
+        boid.dy += (avgDy - boid.dy) * matchingFactor;
+    }
+}
+
+
+function avoidOthers(boid) {
+    const minDistance = 20;
+    const avoidFactor = 0.05;
+
+    let translateX = 0;
+    let translateY = 0;
+
+    for (let otherBoid of boids) {
+        if (otherBoid !== boid) {
+            if (distance(boid, otherBoid) < minDistance) {
+                translateX += (boid.x - otherBoid.x);
+                translateY += (boid.y - otherBoid.y);
+            }
+        }
+    }
+
+    boid.dx += translateX * avoidFactor;
+    boid.dy += translateY * avoidFactor;
+}
 
 window.onload = () => {
     // Make sure the canvas always fills the whole window
