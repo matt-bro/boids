@@ -2,17 +2,24 @@
 width = 0;
 height = 0;
 
-numberOfBoids = 300;
+numberOfBoids = 1000;
 boids = [];
+visualRange = 100;
 
 function animationLoop() {
     //reset
     const ctx = document.getElementById("boids").getContext("2d");
     ctx.clearRect(0, 0, width, height);
-
     for (let boid of boids) {
+        flyTowardsCenter(boid);
+        keepWithinBounds(boid);
+        boid.x += boid.dx;
+        boid.y += boid.dy;
+        //boid.history.push([boid.x, boid.y])
+        //boid.history = boid.history.slice(-50);
         drawBoid(ctx, boid);
     }
+    window.requestAnimationFrame(animationLoop);
 }
 
 function setupCanvasSize() {
@@ -52,6 +59,62 @@ function drawBoid(ctx, boid) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
 }
+
+function distance(boid1, boid2) {
+    return Math.sqrt(
+        (boid1.x - boid2.x) * (boid1.x - boid2.x) +
+        (boid1.y - boid2.y) * (boid1.y - boid2.y),
+    );
+}
+
+function flyTowardsCenter(boid) {
+    //find the center of the closes boids
+    const centeringFactor = 0.05;
+
+    var centerX = 0;
+    var centerY = 0;
+    var numberOfBoidsInRange = 0;
+
+    for (let otherBoid of boids) {
+        if (distance(boid, otherBoid) < visualRange) {
+            centerX += otherBoid.x;
+            centerY += otherBoid.y;
+            numberOfBoidsInRange += 1;
+        }
+    }
+    if (numberOfBoidsInRange) {
+        centerX = centerX / numberOfBoidsInRange;
+        centerY = centerY / numberOfBoidsInRange;
+
+        boid.dx += (centerX - boid.x) * centeringFactor;
+        boid.dy += (centerY - boid.y) * centeringFactor;
+    }
+}
+
+function keepWithinBounds(boid) {
+    const margin = 100;
+    const turnFactor = 1;
+
+    if (boid.x < margin) {
+        boid.dx += turnFactor;
+    }
+    if (boid.y < margin) {
+        boid.dy += turnFactor;
+    }
+    if (boid.x > width-margin) {
+        boid.dx -= turnFactor;
+    }
+    if (boid.y > height-margin) {
+        boid.dy -= turnFactor; 
+    }
+}
+
+function limitVelocity(boid) {
+
+}
+
+function matchVelocity(boid) { }
+function avoidOthers(boid) { }
 
 window.onload = () => {
     // Make sure the canvas always fills the whole window
