@@ -5,6 +5,8 @@ height = 0;
 numberOfBoids = 1000;
 boids = [];
 visualRange = 100;
+shouldDrawTrace = true;
+
 
 function animationLoop() {
     //reset
@@ -19,10 +21,20 @@ function animationLoop() {
 
         boid.x += boid.dx;
         boid.y += boid.dy;
-        //boid.history.push([boid.x, boid.y])
-        //boid.history = boid.history.slice(-50);
+        boid.history.push([boid.x, boid.y])
+        boid.history = boid.history.slice(-30);
         drawBoid(ctx, boid);
     }
+
+    const reducer = (accumulator, currentValue) => accumulator + currentValue;
+    const vel = boids.map(boid => {
+        const velocity = Math.sqrt(boid.dx * boid.dx + boid.dy * boid.dy);
+        return velocity;
+    }).reduce(reducer) / boids.length;
+    if (avgVelContainer) {
+        avgVelContainer.innerText = "Avg Vel: "+vel;
+    }
+
     window.requestAnimationFrame(animationLoop);
 }
 
@@ -62,6 +74,17 @@ function drawBoid(ctx, boid) {
     ctx.fill();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+    if (shouldDrawTrace) {
+        ctx.strokeStyle = "#558cf466";
+        ctx.beginPath();
+        ctx.moveTo(boid.history[0][0], boid.history[0][1]);
+        for (const point of boid.history) {
+            ctx.lineTo(point[0], point[1]);
+        }
+        ctx.stroke();
+    }
+    
+
 }
 
 function distance(boid1, boid2) {
@@ -72,7 +95,6 @@ function distance(boid1, boid2) {
 }
 
 function flyTowardsCenter(boid) {
-    //find the center of the closes boids
     const centeringFactor = 0.05;
 
     var centerX = 0;
@@ -114,7 +136,7 @@ function keepWithinBounds(boid) {
 }
 
 function limitVelocity(boid) {
-    const velocityLimit = 15;
+    const velocityLimit = 20;
     const velocity = Math.sqrt(boid.dx * boid.dx + boid.dy * boid.dy);
     if (velocity > velocityLimit) {
         boid.dx = (boid.dx / velocity) * velocityLimit;
@@ -170,6 +192,7 @@ function avoidOthers(boid) {
 window.onload = () => {
     // Make sure the canvas always fills the whole window
     window.addEventListener("resize", setupCanvasSize, false);
+    avgVelContainer = document.getElementById("averageVelocity");
     setupCanvasSize();
 
     // Randomly distribute the boids to start
