@@ -4,16 +4,18 @@ boids = [];
 visualRange = 100;
 numberOfBoids = 1000;
 shouldDrawTrace = true;
-maxBounds = new THREE.Vector3(10,10,10);
+maxBounds = new THREE.Vector3(15.0,15.0,15.0);
 camera = undefined;
 
 function createBoid(position) {
-    const radius = 4;
-    const color = 0x00ffff;
+    const radius = 0.1;
+    var r = Math.floor(Math.random()*255);
+    var g = Math.floor(Math.random()*255);
+    var b = Math.floor(Math.random()*255);
     let geometry = new THREE.SphereGeometry(radius);
-    let material = new THREE.MeshPhongMaterial(color);
+    let material = new THREE.MeshPhongMaterial({color : "rgb(" + r + ", " + g + ", " + b + ")"});
     let boid = new THREE.Mesh(geometry, material);
-    boid.position = position;
+    boid.position.set(position.x, position.y, position.z);
     return boid
 }
 
@@ -42,27 +44,34 @@ function init() {
 
     var center = new THREE.Vector3(5,5,5);
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, 1.0, 1, 1000);
-    camera.position.set(30, 20, 30);
+    camera = new THREE.PerspectiveCamera(55, 1.0, 1, 1000);
+    camera.position.set(40, 20, 30);
     camera.lookAt(center);
 
     let light = new THREE.DirectionalLight(0xFFFFFF);
-    light.position.set(1,1,1);
     scene.add(light);
+    light.position.set(1,1,1);
 
-    var cube = createWireframe(5,5,5);
+    var cube = createWireframe(10,10,10);
     scene.add(cube);
 
+    setupBoids()
+
+    for (var boid of boids) {
+        var sphere = createBoid(boid.position);
+        scene.add(sphere);
+    }
     renderer.render(scene, camera);
 }
 
 function setupBoids() {
     for (var i = 0; i < numberOfBoids; i++) {
-        boids[boids.length] = {
-            position: new THREE.Vector3(maxBounds.x,maxBounds.y,maxBounds.z),
+        boids.push( {
+            position: new THREE.Vector3(Math.random()*maxBounds.x,Math.random()*maxBounds.y,Math.random()*maxBounds.z),
             velocity: new THREE.Vector3(0,0,0),
             history: [],
-        };
+        });
+        
     }
 }
 
