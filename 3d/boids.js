@@ -59,6 +59,7 @@ function init() {
 
     for (var boid of boids) {
         var sphere = createBoid(boid.position);
+        boid.object = sphere;
         scene.add(sphere);
     }
     renderer.render(scene, camera);
@@ -69,6 +70,7 @@ function setupBoids() {
         boids.push( {
             position: new THREE.Vector3(Math.random()*maxBounds.x,Math.random()*maxBounds.y,Math.random()*maxBounds.z),
             velocity: new THREE.Vector3(0,0,0),
+            object: undefined,
             history: [],
         });
         
@@ -77,8 +79,10 @@ function setupBoids() {
 
 function moveBoids() {
     for (let boid of boids) {
-
+        flyTowardsCenter(boid);
+        boid.position.add(boid.velocity);
     }
+
 }
 
 //RULES
@@ -90,7 +94,7 @@ function flyTowardsCenter(boid) {
     for (let otherBoid of boids) {
         if (distance(boid, otherBoid) < visualRange) {
             center.add(boid.position);
-            numberOfBoidsInRange += 1;
+            numberOfBoidsInRange++;
         }
     }
 
@@ -103,7 +107,7 @@ function flyTowardsCenter(boid) {
     boid.velocity.add(center * centeringFactor);
 }
 
-function distance() {
+function distance(boid1, boid2) {
     return Math.sqrt(
         (boid1.position.x - boid2.position.x) * (boid1.position.x - boid2.position.x) +
         (boid1.position.y - boid2.position.y) * (boid1.position.y - boid2.position.y) +
@@ -117,9 +121,15 @@ function limitVelocity(boid) {}
 function keepWithinBounds(boid) {}
 
 function animationLoop() {
-
+    moveBoids();
+    for (let boid of boids) {
+        boid.object.position.set(boid.position);
+    }
+    window.requestAnimationFrame(animationLoop);
 }
 
 window.onload = () => {
+    window.addEventListener("resize", init, false);
     init();
+    window.requestAnimationFrame(animationLoop);
 }
