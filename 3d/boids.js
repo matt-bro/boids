@@ -80,6 +80,8 @@ function setupBoids() {
 function moveBoids() {
     for (let boid of boids) {
         flyTowardsCenter(boid);
+        limitVelocity(boid);
+        keepWithinBounds(boid);
         boid.position.add(boid.velocity);
     }
 
@@ -92,19 +94,20 @@ function flyTowardsCenter(boid) {
     var numberOfBoidsInRange = 0;
 
     for (let otherBoid of boids) {
-        if (distance(boid, otherBoid) < visualRange) {
+        let dist = distance(boid, otherBoid);
+        if (dist < visualRange) {
             center.add(boid.position);
             numberOfBoidsInRange++;
         }
     }
 
     if (numberOfBoidsInRange) {
-        center.x = center.x / numberOfBoidsInRange;
-        center.y = center.y / numberOfBoidsInRange;
-        center.z = center.z / numberOfBoidsInRange;
+        center.x = (center.x / numberOfBoidsInRange) * centeringFactor;
+        center.y = (center.y / numberOfBoidsInRange) * centeringFactor;
+        center.z = (center.z / numberOfBoidsInRange) * centeringFactor;
     }
 
-    boid.velocity.add(center * centeringFactor);
+    boid.velocity.add(center);
 }
 
 function distance(boid1, boid2) {
@@ -117,14 +120,35 @@ function distance(boid1, boid2) {
 
 function avoidOthers(boid) {}
 function matchVelocity(boid) {}
-function limitVelocity(boid) {}
-function keepWithinBounds(boid) {}
+function limitVelocity(boid) {
+    var speed = boid.velocity.length();
+        const kMaxSpeed = 0.5;
+        if(speed > kMaxSpeed)
+        {
+            var r = kMaxSpeed / speed;
+            boid.velocity.multiplyScalar(r);
+        }
+        
+
+}
+function keepWithinBounds(boid) {
+    // Inverse velocity when out of screen.
+    if( (boid.position.x < 0 && boid.velocity.x < 0) || (boid.position.x > maxBounds.x && boid.velocity.x > 0))
+    boid.velocity.x *= -1;
+  if( (boid.position.y < 0 && boid.velocity.y < 0) || (boid.position.y > maxBounds.y && boid.velocity.y > 0))
+    boid.velocity.y *= -1;
+  if( (boid.position.z < 0 && boid.velocity.z < 0) || (boid.position.z > maxBounds.z && boid.velocity.z > 0))
+    boid.velocity.z *= -1;
+}
 
 function animationLoop() {
     moveBoids();
     for (let boid of boids) {
-        boid.object.position.set(boid.position);
+        boid.object.position.x = boid.position.x;
+        boid.object.position.y = boid.position.y;
+        boid.object.position.z = boid.position.z;
     }
+    renderer.render(scene,camera);
     window.requestAnimationFrame(animationLoop);
 }
 
