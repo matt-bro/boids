@@ -75,6 +75,51 @@ function setupBoids() {
     }
 }
 
+function moveBoids() {
+    for (let boid of boids) {
+
+    }
+}
+
+//RULES
+function flyTowardsCenter(boid) {
+    const centeringFactor = 0.05;
+    var center = new THREE.Vector3(0);
+    var numberOfBoidsInRange = 0;
+
+    for (let otherBoid of boids) {
+        if (distance(boid, otherBoid) < visualRange) {
+            center.add(boid.position);
+            numberOfBoidsInRange += 1;
+        }
+    }
+
+    if (numberOfBoidsInRange) {
+        center.x = center.x / numberOfBoidsInRange;
+        center.y = center.y / numberOfBoidsInRange;
+        center.z = center.z / numberOfBoidsInRange;
+    }
+
+    boid.velocity.add(center * centeringFactor);
+}
+
+function distance() {
+    return Math.sqrt(
+        (boid1.position.x - boid2.position.x) * (boid1.position.x - boid2.position.x) +
+        (boid1.position.y - boid2.position.y) * (boid1.position.y - boid2.position.y) +
+        (boid1.position.z - boid2.position.z) * (boid1.position.z - boid2.position.z) 
+    );
+}
+
+function avoidOthers(boid) {}
+function matchVelocity(boid) {}
+function limitVelocity(boid) {}
+function keepWithinBounds(boid) {}
+
+function animationLoop() {
+
+}
+
 window.onload = () => {
     init();
 }
