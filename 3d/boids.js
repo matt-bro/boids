@@ -1,11 +1,15 @@
 width = 0;
 height = 0;
 boids = [];
-visualRange = 100;
+visualRange = 200;
 numberOfBoids = 1000;
 shouldDrawTrace = true;
 maxBounds = new THREE.Vector3(15.0,15.0,15.0);
+center = new THREE.Vector3(maxBounds.x / 2, maxBounds.y / 2, maxBounds.z / 2);
 camera = undefined;
+theta = 0;
+const kCameraRadius = 30;
+const kCameraY = 20;
 
 function createBoid(position) {
     const radius = 0.1;
@@ -21,7 +25,7 @@ function createBoid(position) {
 
 function createWireframe(x,y,z) {
     const color = 0x00ff00;
-    const w = 15, h = 15, d = 15;
+    const w = maxBounds.x, h = maxBounds.y, d = maxBounds.z;
     var boxGeometry = new THREE.BoxGeometry(w,h,d);
     var geometry = new THREE.EdgesGeometry(boxGeometry);
     var material = new THREE.LineBasicMaterial(color);
@@ -80,8 +84,14 @@ function setupBoids() {
 function moveBoids() {
     for (let boid of boids) {
         flyTowardsCenter(boid);
+        avoidOthers(boid);
+        //matchVelocity(boid);
         limitVelocity(boid);
         keepWithinBounds(boid);
+
+        boid.history.push(boid.position)
+        boid.history = boid.history.slice(-30);
+
         boid.position.add(boid.velocity);
     }
 
@@ -102,9 +112,12 @@ function flyTowardsCenter(boid) {
     }
 
     if (numberOfBoidsInRange) {
-        center.x = (center.x / numberOfBoidsInRange) * centeringFactor;
-        center.y = (center.y / numberOfBoidsInRange) * centeringFactor;
-        center.z = (center.z / numberOfBoidsInRange) * centeringFactor;
+        //center.x = (center.x / numberOfBoidsInRange) * centeringFactor;
+        //center.y = (center.y / numberOfBoidsInRange) * centeringFactor;
+        //center.z = (center.z / numberOfBoidsInRange) * centeringFactor;
+        //center.sub(boid.position);
+        center.divideScalar(numberOfBoidsInRange).multiplyScalar(centeringFactor);
+        center.divideScalar(200);
     }
 
     boid.velocity.add(center);
@@ -118,8 +131,42 @@ function distance(boid1, boid2) {
     );
 }
 
-function avoidOthers(boid) {}
-function matchVelocity(boid) {}
+function avoidOthers(boid) {
+    const minDistance = 0.1;
+    const avoidFactor = 0.05;
+
+    let translate = new THREE.Vector3(0);
+
+    for (let otherBoid of boids) {
+        if (otherBoid !== boid) {
+            if (distance(boid, otherBoid) < minDistance) {
+                translate.subVectors(boid.position, otherBoid.position)
+            }
+        }
+    }
+
+    boid.velocity.sub(translate);
+}
+
+function matchVelocity(boid) {
+    const matchingFactor = 0.05;
+
+    let averageVelocity = new THREE.Vector3(0);
+    let numberOfBoidsInRange = 0;
+
+    for (let otherBoid of boids) {
+        if (distance(boid, otherBoid) < visualRange) {
+            averageVelocity.add(otherBoid.velocity);
+            numberOfBoidsInRange += 1;
+        }
+    }
+
+    if (numberOfBoidsInRange) {
+        averageVelocity.divideScalar(numberOfBoidsInRange);
+        boid.velocity.sub(averageVelocity).multiplyScalar(matchingFactor); 
+    }
+}
+
 function limitVelocity(boid) {
     var speed = boid.velocity.length();
         const kMaxSpeed = 0.5;
@@ -131,14 +178,15 @@ function limitVelocity(boid) {
         
 
 }
+
 function keepWithinBounds(boid) {
     // Inverse velocity when out of screen.
     if( (boid.position.x < 0 && boid.velocity.x < 0) || (boid.position.x > maxBounds.x && boid.velocity.x > 0))
-    boid.velocity.x *= -1;
-  if( (boid.position.y < 0 && boid.velocity.y < 0) || (boid.position.y > maxBounds.y && boid.velocity.y > 0))
-    boid.velocity.y *= -1;
-  if( (boid.position.z < 0 && boid.velocity.z < 0) || (boid.position.z > maxBounds.z && boid.velocity.z > 0))
-    boid.velocity.z *= -1;
+        boid.velocity.x *= -1;
+    if( (boid.position.y < 0 && boid.velocity.y < 0) || (boid.position.y > maxBounds.y && boid.velocity.y > 0))
+        boid.velocity.y *= -1;
+    if( (boid.position.z < 0 && boid.velocity.z < 0) || (boid.position.z > maxBounds.z && boid.velocity.z > 0))
+        boid.velocity.z *= -1;
 }
 
 function animationLoop() {
@@ -148,6 +196,11 @@ function animationLoop() {
         boid.object.position.y = boid.position.y;
         boid.object.position.z = boid.position.z;
     }
+    var camera_x = kCameraRadius * Math.cos(theta);
+    var camera_z = kCameraRadius * Math.sin(theta);
+    camera.position.set(camera_x, kCameraY, camera_z);
+    camera.lookAt(center);
+    theta += 0.01;
     renderer.render(scene,camera);
     window.requestAnimationFrame(animationLoop);
 }
